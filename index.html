@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clays Specification Code Decoder</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css" rel="stylesheet">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+
+    <style>
+        .result-box {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .hover-btn:hover {
+            transform: translateY(-1px);
+            transition: transform 0.2s;
+        }
+        
+        .code-input {
+            font-size: 1.5rem;
+            font-weight: bold;
+            letter-spacing: 2px;
+            text-align: center;
+            text-transform: uppercase;
+        }
+        
+        .character-breakdown {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid #6c757d;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .character-breakdown.border-success {
+            border-left-color: #198754;
+        }
+        
+        .character-breakdown.border-danger {
+            border-left-color: #dc3545;
+        }
+        
+        .character-breakdown:hover {
+            background: #e9ecef;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .character-label {
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 0.5rem;
+        }
+        
+        .character-value {
+            font-size: 1.1rem;
+            color: #495057;
+        }
+        
+        .position-indicator {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            line-height: 24px;
+            text-align: center;
+            background: #6c757d;
+            color: white;
+            border-radius: 50%;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        
+        .code-visualization {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 1rem 0;
+            flex-wrap: wrap;
+        }
+        
+        .code-char {
+            background: #e9ecef;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #495057;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .code-char.highlight {
+            background: #0d6efd;
+            color: white;
+            border-color: #0d6efd;
+            transform: scale(1.1);
+        }
+        
+        .code-char::after {
+            content: attr(data-position);
+            position: absolute;
+            bottom: -18px;
+            font-size: 0.6rem;
+            color: #6c757d;
+        }
+        
+        .summary-card {
+            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container py-4">
+        <div class="row justify-content-center">
+            <div class="col-md-10">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <h3 class="mb-0">Clays Specification Code Decoder</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="specCode" class="form-label">Specification Code:</label>
+                            <input type="text" class="form-control code-input" id="specCode" 
+                                   placeholder="Enter code (e.g., C45LP1F)" maxlength="12" autocomplete="off">
+                            <div class="form-text">Enter a 6+ character specification code to decode</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <button type="button" class="btn btn-primary hover-btn" onclick="decodeSpecification()" style="min-width: 200px;">
+                                <i class="bi bi-search"></i> Decode Specification
+                            </button>
+                        </div>
+
+                        <div id="codeVisualization" class="code-visualization" style="display: none;"></div>
+
+                        <div class="d-flex mb-3" id="actionButtons" style="display: none;">
+                            <button type="button" class="btn btn-secondary hover-btn px-4 me-3" onclick="clearDecoder()">
+                                <span class="d-none d-md-inline">Clear Code</span>
+                                <span class="d-inline d-md-none">Clear</span>
+                            </button>
+                            <button type="button" class="btn btn-info hover-btn px-4" id="copyResultBtn" onclick="copyResultToClipboard()" disabled>
+                                <span class="d-none d-md-inline">Copy to Clipboard</span>
+                                <span class="d-inline d-md-none">Copy</span>
+                            </button>
+                        </div>
+                        
+                        <div id="results" class="result-section"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Specification data - Updated from CSV file
+        const specData = {
+            product: {
+                'C': 'Cover',
+                'W': 'Cover with Flaps',
+                'J': 'Jacket',
+                'T': 'Tip-In',
+                'F': 'Cover For Case'
+            },
+            
+            colours: {
+                '0': 'No Colour Print',
+                '1': '1 Self Colour',
+                '2': '2 Self Colour',
+                '3': '3 Self Colour',
+                '4': '4 Process Colours',
+                '5': '4 Process Colours + 1 Self Colour',
+                '6': '4 Process Colours + 2 Self Colour',
+                '7': '4 Self Colours',
+                '8': '4 Process Colours + 3 Self Colours',
+                '9': '4 Process Colours + 4 Self Colours'
+            },
+            
+            finish: {
+                '0': 'No Finish',
+                '1': 'Gloss Varnish In Line',
+                '2': 'Gloss Varnish In Line + Matt Varnish Offline',
+                '3': 'Gloss Varnish Off Line',
+                '4': 'Matt Varnish Off Line',
+                '5': 'Gloss Laminate (Standard)',
+                '6': 'Matt Laminate (Standard)',
+                '7': 'Matt Laminate (Standard) / Gloss Spot Varnish',
+                '8': 'Silk Laminate',
+                '9': 'Anti-Scuff Laminate',
+                'A': 'Gloss Laminate (Standard) / Matt Spot UV (In house spot varnish route)',
+                'B': 'Silk Laminate / Matt Spot UV',
+                'C': 'Anti-Scuff Laminate / Gloss Spot UV',
+                'D': 'Gloss Varnish Off Line + Matt Spot UV',
+                'E': 'Matt Varnish In Line + Gloss Spot UV',
+                'F': 'Matt Varnish In Line',
+                'G': 'Matt Varnish Off Line + Gloss Spot UV',
+                'H': 'Outwork Lamination',
+                'J': 'Outwork Lamination / Gloss Spot UV',
+                'K': 'Outwork Lamination / Matt Spot UV',
+                'L': 'Gloss Spot UV',
+                'M': 'Matt Spot UV',
+                'N': 'Gloss Varnish In Line + Matt Spot UV',
+                'Q': 'Soft Matt Lam',
+                'R': 'Soft Matt Lam / Gloss Spot Varnish',
+                'V': 'Recycled Matt Laminate',
+                'W': 'Recycled Matt Laminate/ Gloss Spot Varnish',
+                'Y': 'Recycled Gloss Laminate',
+                'Z': 'Recycled Gloss Laminate/ Matt Spot UV'
+            },
+            
+            texture: {
+                'P': 'Plain',
+                'G': 'Grained'
+            },
+            
+            weight: {
+                '1': '190 gsm',
+                '2': '220 gsm',
+                '3': '265 gsm',
+                '4': '150 gsm',
+                '5': '135 gsm',
+                '6': '130 gsm',
+                '7': '230 gsm'
+            },
+            
+            // Special inks and finishing processes (7th-9th characters)
+            specialInks: {
+                'F': 'Fluorescent',
+                'S': 'Self Colour',
+                'M': 'Non-Conventional Metallic',
+                'K': 'To be used in addition to \'M\' to show a Conventional Metallic',
+                'B': 'Blocked (after print, before laminate)',
+                'E': 'Embossed',
+                'D': 'Debossed',
+                'C': 'Die-Cutting',
+                'P': 'Print Over Foil',
+                'L': 'Block Over Laminate',
+                'U': 'Uncoated Printing',
+                'PB': 'Print Black Over Foil',
+                'BE': 'Block & Emboss (same pass)',
+                'DE': 'Deboss & Emboss (same pass)',
+                'BD': 'Block & Deboss (same pass)',
+                'S1': 'Other Spot UV',
+                'S2': 'Pile Spot UV',
+                'S3': 'Glitter Spot UV',
+                'V1': 'Glow Varnish',
+                'H1': 'Holographic Lam'
+            }
+        };
+
+        // Initialize event listeners when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            const specCodeInput = document.getElementById('specCode');
+            
+            // Add event listener for Enter key
+            specCodeInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    decodeSpecification();
+                }
+            });
+            
+            // Auto-uppercase input
+            specCodeInput.addEventListener('input', function(e) {
+                e.target.value = e.target.value.toUpperCase();
+            });
+            
+            // Clear field when user clicks into it
+            specCodeInput.addEventListener('focus', function(e) {
+                e.target.value = '';
+                // Also clear any existing results
+                document.getElementById('results').innerHTML = '';
+                document.getElementById('codeVisualization').style.display = 'none';
+                document.getElementById('actionButtons').style.display = 'none';
+                document.getElementById('copyResultBtn').disabled = true;
+            });
+        });
+
+        function createCodeVisualization(code) {
+            const visualization = document.getElementById('codeVisualization');
+            visualization.innerHTML = '';
+            
+            for (let i = 0; i < code.length; i++) {
+                const charDiv = document.createElement('div');
+                charDiv.className = 'code-char';
+                charDiv.textContent = code[i];
+                charDiv.setAttribute('data-position', i + 1);
+                visualization.appendChild(charDiv);
+            }
+            
+            visualization.style.display = 'flex';
+            document.getElementById('actionButtons').style.display = 'flex';
+        }
+
+        function highlightPosition(position) {
+            const chars = document.querySelectorAll('.code-char');
+            chars.forEach((char, index) => {
+                char.classList.remove('highlight');
+                if (index === position - 1) {
+                    char.classList.add('highlight');
+                }
+            });
+        }
+
+        function getOrdinalSuffix(num) {
+            const lastDigit = num % 10;
+            const lastTwoDigits = num % 100;
+            
+            if (lastTwoDigits >= 11 && lastTwoDigits <= 13) {
+                return 'th';
+            }
+            
+            switch (lastDigit) {
+                case 1: return 'st';
+                case 2: return 'nd';
+                case 3: return 'rd';
+                default: return 'th';
+            }
+        }
+
+        function decodeSpecification() {
+            const code = document.getElementById('specCode').value.toUpperCase().trim();
+            const resultsDiv = document.getElementById('results');
+            
+            console.log("Decoding code:", code); // Debug log
+            
+            if (!code) {
+                resultsDiv.innerHTML = `
+                    <div class="alert alert-warning fade-in">
+                        <i class="bi bi-exclamation-triangle"></i> Please enter a specification code.
+                    </div>
+                `;
+                return;
+            }
+            
+            if (code.length < 6) {
+                resultsDiv.innerHTML = `
+                    <div class="alert alert-danger fade-in">
+                        <i class="bi bi-x-circle"></i> Specification code must be at least 6 characters long.
+                    </div>
+                `;
+                return;
+            }
+            
+            try {
+                createCodeVisualization(code);
+                
+                const breakdown = [];
+                let summary = [];
+                let hasErrors = false;
+                
+                // 1st Character - Product Type
+                const product = code[0];
+                console.log("Checking product:", product); // Debug log
+                if (specData.product[product]) {
+                    breakdown.push({
+                        position: 1,
+                        label: '1st Character - Product Type',
+                        value: `${product} - ${specData.product[product]}`,
+                        success: true
+                    });
+                    summary.push(`Product: ${specData.product[product]}`);
+                } else {
+                    breakdown.push({
+                        position: 1,
+                        label: '1st Character - Product Type',
+                        value: `${product} - Unknown product type`,
+                        success: false
+                    });
+                    hasErrors = true;
+                }
+                
+                // 2nd Character - Outside Colours
+                const outsideColours = code[1];
+                console.log("Checking outside colours:", outsideColours); // Debug log
+                if (specData.colours[outsideColours]) {
+                    breakdown.push({
+                        position: 2,
+                        label: '2nd Character - Colours (Outside)',
+                        value: `${outsideColours} - ${specData.colours[outsideColours]}`,
+                        success: true
+                    });
+                    summary.push(`Outside: ${specData.colours[outsideColours]}`);
+                } else {
+                    breakdown.push({
+                        position: 2,
+                        label: '2nd Character - Colours (Outside)',
+                        value: `${outsideColours} - Unknown colour specification`,
+                        success: false
+                    });
+                    hasErrors = true;
+                }
+                
+                // 3rd Character - Inside Colours
+                const insideColours = code[2];
+                if (specData.colours[insideColours]) {
+                    breakdown.push({
+                        position: 3,
+                        label: '3rd Character - Colours (Inside)',
+                        value: `${insideColours} - ${specData.colours[insideColours]}`,
+                        success: true
+                    });
+                    summary.push(`Inside: ${specData.colours[insideColours]}`);
+                } else {
+                    breakdown.push({
+                        position: 3,
+                        label: '3rd Character - Colours (Inside)',
+                        value: `${insideColours} - Unknown colour specification`,
+                        success: false
+                    });
+                    hasErrors = true;
+                }
+                
+                // 4th Character - Finish Type
+                const finish = code[3];
+                if (specData.finish[finish]) {
+                    breakdown.push({
+                        position: 4,
+                        label: '4th Character - Type of Finish',
+                        value: `${finish} - ${specData.finish[finish]}`,
+                        success: true
+                    });
+                    summary.push(`Finish: ${specData.finish[finish]}`);
+                } else {
+                    breakdown.push({
+                        position: 4,
+                        label: '4th Character - Type of Finish',
+                        value: `${finish} - Unknown finish type`,
+                        success: false
+                    });
+                    hasErrors = true;
+                }
+                
+                // 5th Character - Texture
+                const texture = code[4];
+                if (specData.texture[texture]) {
+                    breakdown.push({
+                        position: 5,
+                        label: '5th Character - Surface Texture',
+                        value: `${texture} - ${specData.texture[texture]}`,
+                        success: true
+                    });
+                    summary.push(`Texture: ${specData.texture[texture]}`);
+                } else {
+                    breakdown.push({
+                        position: 5,
+                        label: '5th Character - Surface Texture',
+                        value: `${texture} - Unknown texture type`,
+                        success: false
+                    });
+                    hasErrors = true;
+                }
+                
+                // 6th Character - Material Weight
+                const weight = code[5];
+                if (specData.weight[weight]) {
+                    breakdown.push({
+                        position: 6,
+                        label: '6th Character - Material Weight',
+                        value: `${weight} - ${specData.weight[weight]}`,
+                        success: true
+                    });
+                    summary.push(`Weight: ${specData.weight[weight]}`);
+                } else {
+                    breakdown.push({
+                        position: 6,
+                        label: '6th Character - Material Weight',
+                        value: `${weight} - Unknown weight specification`,
+                        success: false
+                    });
+                    hasErrors = true;
+                }
+                
+                // 7th-9th Characters - Special Inks/Processes (optional)
+                if (code.length > 6) {
+                    const specialSection = code.substring(6);
+                    const processBreakdown = [];
+                    let i = 0;
+                    
+                    while (i < specialSection.length) {
+                        let found = false;
+                        
+                        // Check for 2-character codes first
+                        if (i < specialSection.length - 1) {
+                            const twoChar = specialSection.substring(i, i + 2);
+                            if (specData.specialInks[twoChar]) {
+                                processBreakdown.push(specData.specialInks[twoChar]);
+                                breakdown.push({
+                                    position: 7 + i,
+                                    label: `${7 + i}${getOrdinalSuffix(7 + i)}-${7 + i + 1}${getOrdinalSuffix(7 + i + 1)} Characters - Special Process`,
+                                    value: `${twoChar} - ${specData.specialInks[twoChar]}`,
+                                    success: true
+                                });
+                                i += 2;
+                                found = true;
+                            }
+                        }
+                        
+                        // If no 2-character code found, check single character
+                        if (!found) {
+                            const singleChar = specialSection[i];
+                            if (specData.specialInks[singleChar]) {
+                                processBreakdown.push(specData.specialInks[singleChar]);
+                                breakdown.push({
+                                    position: 7 + i,
+                                    label: `${7 + i}${getOrdinalSuffix(7 + i)} Character - Special Process`,
+                                    value: `${singleChar} - ${specData.specialInks[singleChar]}`,
+                                    success: true
+                                });
+                            } else {
+                                breakdown.push({
+                                    position: 7 + i,
+                                    label: `${7 + i}${getOrdinalSuffix(7 + i)} Character - Special Process`,
+                                    value: `${singleChar} - Unknown special process`,
+                                    success: false
+                                });
+                                hasErrors = true;
+                            }
+                            i++;
+                        }
+                    }
+                    
+                    if (processBreakdown.length > 0) {
+                        summary.push(`Special Processes: ${processBreakdown.join(', ')}`);
+                    }
+                }
+                
+                console.log("Breakdown:", breakdown); // Debug log
+                console.log("Summary:", summary); // Debug log
+                
+                // Generate results HTML
+                let resultsHTML = `<div class="fade-in">`;
+                
+                // Character breakdown
+                breakdown.forEach((item, index) => {
+                    const iconClass = item.success ? 'bi bi-check-circle text-success' : 'bi bi-exclamation-circle text-danger';
+                    const borderClass = item.success ? 'border-success' : 'border-danger';
+                    
+                    resultsHTML += `
+                        <div class="character-breakdown ${borderClass}" onclick="highlightPosition(${item.position})">
+                            <div class="character-label">
+                                <span class="position-indicator">${item.position}</span>
+                                ${item.label} <i class="${iconClass}"></i>
+                            </div>
+                            <div class="character-value">${item.value}</div>
+                        </div>
+                    `;
+                });
+                
+                // Summary
+                if (!hasErrors) {
+                    resultsHTML += `
+                        <div class="summary-card">
+                            <h5><i class="bi bi-clipboard-check"></i> Complete Specification Summary</h5>
+                            <p class="mb-2"><strong>Code:</strong> ${code}</p>
+                            <ul class="mb-0">
+                                ${summary.map(item => `<li>${item}</li>`).join('')}
+                            </ul>
+                        </div>
+                    `;
+                    
+                    // Enable copy button
+                    document.getElementById('copyResultBtn').disabled = false;
+                } else {
+                    resultsHTML += `
+                        <div class="alert alert-warning">
+                            <h6><i class="bi bi-exclamation-triangle"></i> Incomplete Specification</h6>
+                            <p class="mb-0">Some characters in your code could not be interpreted. Please check the specification guide and try again.</p>
+                        </div>
+                    `;
+                    
+                    // Disable copy button
+                    document.getElementById('copyResultBtn').disabled = true;
+                }
+                
+                resultsHTML += `</div>`;
+                resultsDiv.innerHTML = resultsHTML;
+                
+            } catch (error) {
+                console.error("Error in decodeSpecification:", error);
+                resultsDiv.innerHTML = `
+                    <div class="alert alert-danger fade-in">
+                        <i class="bi bi-x-circle"></i> An error occurred while processing your code. Please try again.
+                    </div>
+                `;
+            }
+        }
+
+        function clearDecoder() {
+            // Reset input field
+            document.getElementById('specCode').value = '';
+            
+            // Hide results and visualization
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('codeVisualization').style.display = 'none';
+            document.getElementById('actionButtons').style.display = 'none';
+            
+            // Disable copy button
+            document.getElementById('copyResultBtn').disabled = true;
+            
+            // Focus back on input
+            document.getElementById('specCode').focus();
+        }
+
+        function copyResultToClipboard() {
+            // Get the code and results
+            const code = document.getElementById('specCode').value;
+            const summaryCard = document.querySelector('.summary-card');
+            
+            if (!summaryCard) {
+                alert('No complete specification to copy.');
+                return;
+            }
+            
+            // Extract summary text
+            const summaryText = Array.from(summaryCard.querySelectorAll('li'))
+                .map(li => li.textContent)
+                .join('\n');
+            
+            // Create text for clipboard
+            const clipboardText = 
+`Clays Specification Code Decoder
+================================
+Code: ${code}
+
+${summaryText}`;
+            
+            // Copy to clipboard
+            navigator.clipboard.writeText(clipboardText)
+                .then(() => {
+                    // Add a temporary success indicator
+                    const btn = document.getElementById('copyResultBtn');
+                    
+                    // Save original button content
+                    const originalButton = btn.innerHTML;
+                    
+                    // Replace with temporary success message while preserving responsiveness
+                    btn.innerHTML = '<span class="d-none d-md-inline">Copied!</span><span class="d-inline d-md-none">Copied!</span>';
+                    btn.classList.remove('btn-info');
+                    btn.classList.add('btn-success');
+                    
+                    setTimeout(() => {
+                        // Restore original button content with spans
+                        btn.innerHTML = originalButton;
+                        btn.classList.remove('btn-success');
+                        btn.classList.add('btn-info');
+                    }, 2000);
+                })
+                .catch(err => {
+                    console.error('Failed to copy text: ', err);
+                    alert('Failed to copy to clipboard. Please try again.');
+                });
+        }
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
