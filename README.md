@@ -50,9 +50,9 @@ The application decodes codes with the following character positions:
 ## Usage Examples
 
 ### Basic 6-Character Codes
-- `C45LP1` - Cover, 4 process + 1 self outside, 4 process inside, Gloss Spot UV, Plain, 190gsm
-- `W20MP2` - Cover with Flaps, 2 self outside, no colour inside, Matt Spot UV, Plain, 220gsm
-- `J11GP4` - Jacket, 1 self both sides, Grained, Plain, 150gsm
+- `C45LP1` - Cover, 4 process + 1 spot outside, 4 process inside, Gloss Spot UV, Plain, 190gsm
+- `W20MP2` - Cover with Flaps, 2 spot outside, no colour inside, Matt Spot UV, Plain, 220gsm
+- `J11GP4` - Jacket, 1 spot both sides, Grained, Plain, 150gsm
 
 ### Extended Codes with Special Processes
 - `C45LP1F` - Basic code + Fluorescent ink
@@ -122,15 +122,15 @@ The application decodes codes with the following character positions:
 | Code | Description |
 |------|-------------|
 | 0 | No Colour Print |
-| 1 | 1 Self Colour |
-| 2 | 2 Self Colour |
-| 3 | 3 Self Colour |
+| 1 | 1 Spot Colour |
+| 2 | 2 Spot Colours |
+| 3 | 3 Spot Colours |
 | 4 | 4 Process Colours |
-| 5 | 4 Process Colours + 1 Self Colour |
-| 6 | 4 Process Colours + 2 Self Colour |
-| 7 | 4 Self Colours |
-| 8 | 4 Process Colours + 3 Self Colours |
-| 9 | 4 Process Colours + 4 Self Colours |
+| 5 | 4 Process Colours + 1 Spot Colour |
+| 6 | 4 Process Colours + 2 Spot Colours |
+| 7 | 4 Spot Colours |
+| 8 | 4 Process Colours + 3 Spot Colours |
+| 9 | 4 Process Colours + 4 Spot Colours |
 
 ### Material Weights (6th Character)
 | Code | GSM |
@@ -147,7 +147,7 @@ The application decodes codes with the following character positions:
 | Code | Description |
 |------|-------------|
 | F | Fluorescent |
-| S | Self Colour |
+| S | Spot Colour |
 | M | Non-Conventional Metallic |
 | K | Conventional Metallic (used with M) |
 | B | Blocked (after print, before laminate) |
