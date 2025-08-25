@@ -135,13 +135,13 @@ The application decodes codes with the following character positions:
 ### Material Weights (6th Character)
 | Code | GSM |
 |------|-----|
-| 1 | 190 gsm |
+| 1 | 220 gsm |
 | 2 | 220 gsm |
-| 3 | 265 gsm |
+| 3 | 260 gsm |
 | 4 | 150 gsm |
 | 5 | 135 gsm |
 | 6 | 130 gsm |
-| 7 | 230 gsm |
+| 7 | 220 gsm |
 
 ### Special Processes (7th-9th Characters)
 | Code | Description |
